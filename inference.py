@@ -7,6 +7,7 @@ from glob import glob
 import torch, face_detection
 from models import Wav2Lip
 import platform
+import shutil
 
 parser = argparse.ArgumentParser(description='Inference code to lip-sync videos in the wild using Wav2Lip models')
 
@@ -250,7 +251,15 @@ def main():
 
 	batch_size = args.wav2lip_batch_size
 	gen = datagen(full_frames.copy(), mel_chunks)
-
+	try:
+		#clear "results/frame" folder
+		if os.path.isdir('results/frames'):
+			shutil.rmtree('results/frames')
+	except:
+		pass
+	os.mkdir('results/frames')
+	
+	o=0
 	for i, (img_batch, mel_batch, frames, coords) in enumerate(tqdm(gen, 
 											total=int(np.ceil(float(len(mel_chunks))/batch_size)))):
 		if i == 0:
@@ -263,18 +272,24 @@ def main():
 
 		img_batch = torch.FloatTensor(np.transpose(img_batch, (0, 3, 1, 2))).to(device)
 		mel_batch = torch.FloatTensor(np.transpose(mel_batch, (0, 3, 1, 2))).to(device)
-
+		#save frame
+		
 		with torch.no_grad():
 			pred = model(mel_batch, img_batch)
 
 		pred = pred.cpu().numpy().transpose(0, 2, 3, 1) * 255.
 		
+		
 		for p, f, c in zip(pred, frames, coords):
 			y1, y2, x1, x2 = c
 			p = cv2.resize(p.astype(np.uint8), (x2 - x1, y2 - y1))
+			
 
 			f[y1:y2, x1:x2] = p
 			out.write(f)
+			cv2.imwrite(f'results/frames/{o}.jpg',f)
+			o+=1
+			
 
 	out.release()
 
