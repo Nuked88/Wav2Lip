@@ -57,6 +57,10 @@ args.img_size = 96
 if os.path.isfile(args.face) and args.face.split('.')[1] in ['jpg', 'png', 'jpeg']:
 	args.static = True
 
+#create temp dir if not exists
+if not os.path.exists('temp'):
+	os.makedirs('temp')
+
 def get_smoothened_boxes(boxes, T):
 	for i in range(len(boxes)):
 		if i + T > len(boxes):
